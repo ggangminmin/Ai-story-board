@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import NotesListPage from './pages/NotesListPage';
 import NewNotePage from './pages/NewNotePage';
 import EditNotePage from './pages/EditNotePage';
