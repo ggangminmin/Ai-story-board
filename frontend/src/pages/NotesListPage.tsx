@@ -35,7 +35,8 @@ function NotesListPage() {
       setNotes(response.data);
     } catch (error) {
       console.error('노트 조회 실패:', error);
-      alert('노트를 불러오는데 실패했습니다.');
+      // 에러 발생 시 빈 배열로 설정 (초기 상태)
+      setNotes([]);
     } finally {
       setLoading(false);
     }
