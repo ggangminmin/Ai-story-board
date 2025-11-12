@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: myvault-backend
+    env: node
+    region: singapore
+    plan: free
+    buildCommand: cd backend && npm install && npm run build
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: UPLOADS_DIR
+        value: /tmp/uploads
+      - key: DATA_DIR
+        value: /tmp
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ENCRYPTION_KEY
+        generateValue: true
+      - key: FRONTEND_URL
+        value: https://ai-story-board-sable.vercel.app
