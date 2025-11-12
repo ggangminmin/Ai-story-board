@@ -1,0 +1,19 @@
+{
+  "name": "myvault-ai",
+  "version": "1.0.0",
+  "description": "MyVault AI - 개인 아카이브 웹앱",
+  "scripts": {
+    "setup": "node setup.js",
+    "install-all": "npm run install-backend && npm run install-frontend",
+    "install-backend": "cd backend && npm install",
+    "install-frontend": "cd frontend && npm install",
+    "dev": "node start-dev.js",
+    "start": "npm run dev"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
