@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // 환경변수에서 API URL 가져오기
-const API_URL = import.meta.env.VITE_API_URL || '';
+const API_URL = (import.meta as any).env.VITE_API_URL || '';
 
 // axios 인스턴스 생성
 const apiClient = axios.create({
