@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import apiClient from '../api/client';
 import { Note, FileInfo } from '../types';
 
 function ViewNotePage() {
@@ -15,7 +15,7 @@ function ViewNotePage() {
 
   const fetchNote = async () => {
     try {
-      const response = await axios.get(`/api/notes/${id}`);
+      const response = await apiClient.get(`/api/notes/${id}`);
       setNote(response.data);
     } catch (error) {
       console.error('노트 조회 실패:', error);
@@ -30,7 +30,7 @@ function ViewNotePage() {
     if (!confirm('정말 삭제하시겠습니까?')) return;
 
     try {
-      await axios.delete(`/api/notes/${id}`);
+      await apiClient.delete(`/api/notes/${id}`);
       alert('삭제되었습니다.');
       navigate('/');
     } catch (error) {
@@ -41,7 +41,7 @@ function ViewNotePage() {
 
   const toggleFavorite = async () => {
     try {
-      await axios.patch(`/api/notes/${id}/favorite`);
+      await apiClient.patch(`/api/notes/${id}/favorite`);
       fetchNote();
     } catch (error) {
       console.error('중요 표시 실패:', error);

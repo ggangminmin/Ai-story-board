@@ -1,6 +1,6 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import axios from 'axios';
+import apiClient from '../api/client';
 import { Note, FileInfo } from '../types';
 
 function EditNotePage() {
@@ -19,7 +19,7 @@ function EditNotePage() {
 
   const fetchNote = async () => {
     try {
-      const response = await axios.get<Note>(`/api/notes/${id}`);
+      const response = await apiClient.get<Note>(`/api/notes/${id}`);
       const note = response.data;
 
       setContent(note.content);
@@ -64,7 +64,7 @@ function EditNotePage() {
         });
       }
 
-      await axios.put(`/api/notes/${id}`, formData, {
+      await apiClient.put(`/api/notes/${id}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import apiClient from '../api/client';
 import { Note, FileInfo } from '../types';
 
 type SortOption = 'latest' | 'favorite';
@@ -31,7 +31,7 @@ function NotesListPage() {
 
   const fetchNotes = async () => {
     try {
-      const response = await axios.get('/api/notes');
+      const response = await apiClient.get('/api/notes');
       setNotes(response.data);
     } catch (error) {
       console.error('노트 조회 실패:', error);
@@ -50,7 +50,7 @@ function NotesListPage() {
 
     try {
       setIsSearching(true);
-      const response = await axios.post('/api/notes/search', {
+      const response = await apiClient.post('/api/notes/search', {
         query: searchQuery
       });
       setNotes(response.data);
@@ -69,7 +69,7 @@ function NotesListPage() {
     if (!confirm('정말 삭제하시겠습니까?')) return;
 
     try {
-      await axios.delete(`/api/notes/${id}`);
+      await apiClient.delete(`/api/notes/${id}`);
       fetchNotes();
     } catch (error) {
       console.error('삭제 실패:', error);
@@ -82,7 +82,7 @@ function NotesListPage() {
     e.stopPropagation();
 
     try {
-      await axios.patch(`/api/notes/${id}/favorite`);
+      await apiClient.patch(`/api/notes/${id}/favorite`);
       fetchNotes();
     } catch (error) {
       console.error('중요 표시 실패:', error);

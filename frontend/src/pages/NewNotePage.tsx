@@ -1,6 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import apiClient from '../api/client';
 
 function NewNotePage() {
   const navigate = useNavigate();
@@ -30,7 +30,7 @@ function NewNotePage() {
         });
       }
 
-      await axios.post('/api/notes', formData, {
+      await apiClient.post('/api/notes', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
