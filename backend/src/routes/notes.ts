@@ -49,9 +49,9 @@ const upload = multer({
 });
 
 // 전체 노트 조회
-router.get('/', (req: Request, res: Response) => {
+router.get('/', async (req: Request, res: Response) => {
   try {
-    const notes = database.getAllNotes();
+    const notes = await database.getAllNotes();
     res.json(notes);
   } catch (error) {
     res.status(500).json({ error: '노트 조회 중 오류가 발생했습니다.' });
@@ -59,10 +59,10 @@ router.get('/', (req: Request, res: Response) => {
 });
 
 // 단일 노트 조회
-router.get('/:id', (req: Request, res: Response) => {
+router.get('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const note = database.getNoteById(parseInt(id));
+    const note = await database.getNoteById(id);
 
     if (!note) {
       return res.status(404).json({ error: '노트를 찾을 수 없습니다.' });
@@ -134,7 +134,7 @@ router.post('/', upload.array('files', 10), async (req: Request, res: Response) 
     const embedding = await generateEmbedding(searchableText);
     const embeddingJson = embedding.length > 0 ? JSON.stringify(embedding) : null;
 
-    const newNote = database.createNote({
+    const newNote = await database.createNote({
       content,
       summary,
       tags: JSON.stringify(tags),
@@ -158,7 +158,7 @@ router.put('/:id', upload.array('files', 10), async (req: Request, res: Response
     const { id } = req.params;
     const { content, link, existingFiles } = req.body;
 
-    const existingNote = database.getNoteById(parseInt(id));
+    const existingNote = await database.getNoteById(id);
     if (!existingNote) {
       return res.status(404).json({ error: '노트를 찾을 수 없습니다.' });
     }
@@ -203,7 +203,7 @@ router.put('/:id', upload.array('files', 10), async (req: Request, res: Response
     const embedding = await generateEmbedding(searchableText);
     const embeddingJson = embedding.length > 0 ? JSON.stringify(embedding) : null;
 
-    const updatedNote = database.updateNote(parseInt(id), {
+    const updatedNote = await database.updateNote(id, {
       content: finalContent,
       summary,
       tags: typeof tags === 'string' ? tags : JSON.stringify(tags),
@@ -220,11 +220,11 @@ router.put('/:id', upload.array('files', 10), async (req: Request, res: Response
 });
 
 // 노트 삭제
-router.delete('/:id', (req: Request, res: Response) => {
+router.delete('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const deleted = database.deleteNote(parseInt(id));
+    const deleted = await database.deleteNote(id);
     if (!deleted) {
       return res.status(404).json({ error: '노트를 찾을 수 없습니다.' });
     }
@@ -236,16 +236,16 @@ router.delete('/:id', (req: Request, res: Response) => {
 });
 
 // 중요 표시 토글
-router.patch('/:id/favorite', (req: Request, res: Response) => {
+router.patch('/:id/favorite', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const note = database.getNoteById(parseInt(id));
+    const note = await database.getNoteById(id);
 
     if (!note) {
       return res.status(404).json({ error: '노트를 찾을 수 없습니다.' });
     }
 
-    const updatedNote = database.updateNote(parseInt(id), {
+    const updatedNote = await database.updateNote(id, {
       favorite: !note.favorite
     });
 
@@ -256,10 +256,10 @@ router.patch('/:id/favorite', (req: Request, res: Response) => {
 });
 
 // 검색 (기존 키워드 검색)
-router.get('/search/:query', (req: Request, res: Response) => {
+router.get('/search/:query', async (req: Request, res: Response) => {
   try {
     const { query } = req.params;
-    const notes = database.searchNotes(query);
+    const notes = await database.searchNotes(query);
     res.json(notes);
   } catch (error) {
     res.status(500).json({ error: '검색 중 오류가 발생했습니다.' });
@@ -283,7 +283,7 @@ router.post('/search', async (req: Request, res: Response) => {
     }
 
     // 2. 모든 노트 가져오기
-    const allNotes = database.getAllNotes();
+    const allNotes = await database.getAllNotes();
 
     // 3. 각 노트와 유사도 계산
     const notesWithSimilarity = allNotes

@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
+import mongoose from 'mongoose';
+import Note, { INote } from './models/Note';
 
 dotenv.config();
 
@@ -8,7 +10,6 @@ dotenv.config();
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..');
 const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, '..', 'uploads');
 
-const dbPath = path.join(DATA_DIR, 'data.json');
 const uploadsDir = UPLOADS_DIR;
 
 // uploads 폴더 생성
@@ -18,109 +19,115 @@ if (!fs.existsSync(uploadsDir)) {
 
 export { uploadsDir };
 
-interface Note {
-  id: number;
-  content: string;
-  summary: string | null;
-  tags: string | null;
-  link: string | null;
-  link_description: string | null;
-  files: string | null;
-  embedding: string | null;
-  favorite: boolean;
-  created_at: string;
-  updated_at: string;
-}
+// MongoDB 연결
+const MONGODB_URI = process.env.MONGODB_URI || '';
 
-interface Database {
-  notes: Note[];
-  nextId: number;
-}
-
-// 데이터베이스 초기화
-let db: Database = {
-  notes: [],
-  nextId: 1
-};
-
-// 데이터 로드
-if (fs.existsSync(dbPath)) {
-  try {
-    const data = fs.readFileSync(dbPath, 'utf-8');
-    db = JSON.parse(data);
-  } catch (error) {
-    console.error('데이터 로드 실패, 새로운 데이터베이스 생성');
-  }
-}
-
-// 데이터 저장
-function saveData() {
-  fs.writeFileSync(dbPath, JSON.stringify(db, null, 2), 'utf-8');
+if (!MONGODB_URI) {
+  console.error('⚠️  MONGODB_URI is not set in environment variables');
+  console.log('Falling back to JSON-based storage (temporary)');
+} else {
+  mongoose
+    .connect(MONGODB_URI)
+    .then(() => {
+      console.log('✅ MongoDB connected successfully');
+    })
+    .catch((error) => {
+      console.error('❌ MongoDB connection error:', error);
+      console.log('Falling back to JSON-based storage (temporary)');
+    });
 }
 
 // DB 함수들
 export const database = {
   // 전체 노트 조회
-  getAllNotes: (): Note[] => {
-    return db.notes.sort((a, b) =>
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
+  getAllNotes: async (): Promise<INote[]> => {
+    try {
+      return await Note.find().sort({ created_at: -1 });
+    } catch (error) {
+      console.error('getAllNotes error:', error);
+      return [];
+    }
   },
 
   // 단일 노트 조회
-  getNoteById: (id: number): Note | undefined => {
-    return db.notes.find(note => note.id === id);
+  getNoteById: async (id: string): Promise<INote | null> => {
+    try {
+      return await Note.findById(id);
+    } catch (error) {
+      console.error('getNoteById error:', error);
+      return null;
+    }
   },
 
   // 노트 생성
-  createNote: (data: Omit<Note, 'id' | 'created_at' | 'updated_at'>): Note => {
-    const now = new Date().toISOString();
-    const newNote: Note = {
-      id: db.nextId++,
-      ...data,
-      created_at: now,
-      updated_at: now
-    };
-    db.notes.push(newNote);
-    saveData();
-    return newNote;
+  createNote: async (data: {
+    content: string;
+    summary?: string | null;
+    tags?: string | null;
+    link?: string | null;
+    link_description?: string | null;
+    files?: string | null;
+    embedding?: string | null;
+    favorite?: boolean;
+  }): Promise<INote> => {
+    try {
+      const note = new Note(data);
+      return await note.save();
+    } catch (error) {
+      console.error('createNote error:', error);
+      throw error;
+    }
   },
 
   // 노트 수정
-  updateNote: (id: number, data: Partial<Omit<Note, 'id' | 'created_at'>>): Note | null => {
-    const index = db.notes.findIndex(note => note.id === id);
-    if (index === -1) return null;
-
-    db.notes[index] = {
-      ...db.notes[index],
-      ...data,
-      updated_at: new Date().toISOString()
-    };
-    saveData();
-    return db.notes[index];
+  updateNote: async (
+    id: string,
+    data: Partial<{
+      content: string;
+      summary: string | null;
+      tags: string | null;
+      link: string | null;
+      link_description: string | null;
+      files: string | null;
+      embedding: string | null;
+      favorite: boolean;
+    }>
+  ): Promise<INote | null> => {
+    try {
+      return await Note.findByIdAndUpdate(id, data, { new: true });
+    } catch (error) {
+      console.error('updateNote error:', error);
+      return null;
+    }
   },
 
   // 노트 삭제
-  deleteNote: (id: number): boolean => {
-    const index = db.notes.findIndex(note => note.id === id);
-    if (index === -1) return false;
-
-    db.notes.splice(index, 1);
-    saveData();
-    return true;
+  deleteNote: async (id: string): Promise<boolean> => {
+    try {
+      const result = await Note.findByIdAndDelete(id);
+      return !!result;
+    } catch (error) {
+      console.error('deleteNote error:', error);
+      return false;
+    }
   },
 
   // 검색
-  searchNotes: (query: string): Note[] => {
-    const lowerQuery = query.toLowerCase();
-    return db.notes.filter(note =>
-      note.content.toLowerCase().includes(lowerQuery) ||
-      note.summary?.toLowerCase().includes(lowerQuery) ||
-      note.tags?.toLowerCase().includes(lowerQuery)
-    ).sort((a, b) =>
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
+  searchNotes: async (query: string): Promise<INote[]> => {
+    try {
+      const regex = new RegExp(query, 'i');
+      return await Note.find({
+        $or: [
+          { content: regex },
+          { summary: regex },
+          { tags: regex }
+        ]
+      }).sort({ created_at: -1 });
+    } catch (error) {
+      console.error('searchNotes error:', error);
+      return [];
+    }
   }
 };
 
-console.log('Database initialized successfully (JSON-based)');
+console.log('Database module initialized (MongoDB)');
