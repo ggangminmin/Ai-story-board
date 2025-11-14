@@ -28,7 +28,7 @@ const NoteSchema: Schema = new Schema(
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
     toJSON: {
       virtuals: true,
-      transform: (doc, ret) => {
+      transform: (doc: any, ret: any) => {
         ret.id = ret._id.toString();
         delete ret._id;
         delete ret.__v;
