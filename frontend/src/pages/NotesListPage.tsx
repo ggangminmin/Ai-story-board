@@ -62,7 +62,7 @@ function NotesListPage() {
     }
   };
 
-  const handleDelete = async (id: number, e: React.MouseEvent) => {
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -77,7 +77,7 @@ function NotesListPage() {
     }
   };
 
-  const toggleFavorite = async (id: number, e: React.MouseEvent) => {
+  const toggleFavorite = async (id: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
