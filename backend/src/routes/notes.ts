@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import multer from 'multer';
 import path from 'path';
+import mongoose from 'mongoose';
 import { database, uploadsDir } from '../db';
 import { generateSummary, generateTags, generateLinkDescription, generateFileSummary, generateEmbedding } from '../services/openai';
 import { extractTextFromFile, isDocumentFile, isImageFile } from '../services/fileParser';
@@ -8,6 +9,15 @@ import { cosineSimilarity } from '../utils/similarity';
 import CryptoJS from 'crypto-js';
 
 const router = express.Router();
+
+// MongoDB ObjectId 유효성 검사 미들웨어
+const validateObjectId = (req: Request, res: Response, next: Function) => {
+  const { id } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ error: '올바르지 않은 노트 ID입니다.' });
+  }
+  next();
+};
 
 // 파일 업로드 설정
 const storage = multer.diskStorage({
@@ -59,7 +69,7 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // 단일 노트 조회
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', validateObjectId, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const note = await database.getNoteById(id);
@@ -70,6 +80,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 
     res.json(note);
   } catch (error) {
+    console.error('Get note error:', error);
     res.status(500).json({ error: '노트 조회 중 오류가 발생했습니다.' });
   }
 });
@@ -153,7 +164,7 @@ router.post('/', upload.array('files', 10), async (req: Request, res: Response) 
 });
 
 // 노트 수정
-router.put('/:id', upload.array('files', 10), async (req: Request, res: Response) => {
+router.put('/:id', validateObjectId, upload.array('files', 10), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { content, link, existingFiles } = req.body;
@@ -220,7 +231,7 @@ router.put('/:id', upload.array('files', 10), async (req: Request, res: Response
 });
 
 // 노트 삭제
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', validateObjectId, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
@@ -236,7 +247,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
 });
 
 // 중요 표시 토글
-router.patch('/:id/favorite', async (req: Request, res: Response) => {
+router.patch('/:id/favorite', validateObjectId, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const note = await database.getNoteById(id);
