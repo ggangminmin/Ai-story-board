@@ -40,9 +40,14 @@ if (!MONGODB_URI) {
 // DB 함수들
 export const database = {
   // 전체 노트 조회
-  getAllNotes: async (): Promise<INote[]> => {
+  getAllNotes: async (): Promise<any[]> => {
     try {
-      return await Note.find().sort({ created_at: -1 });
+      const notes = await Note.find().sort({ created_at: -1 }).lean();
+      return notes.map(note => ({
+        ...note,
+        id: note._id.toString(),
+        _id: undefined
+      }));
     } catch (error) {
       console.error('getAllNotes error:', error);
       return [];
@@ -50,9 +55,15 @@ export const database = {
   },
 
   // 단일 노트 조회
-  getNoteById: async (id: string): Promise<INote | null> => {
+  getNoteById: async (id: string): Promise<any | null> => {
     try {
-      return await Note.findById(id);
+      const note = await Note.findById(id).lean();
+      if (!note) return null;
+      return {
+        ...note,
+        id: note._id.toString(),
+        _id: undefined
+      };
     } catch (error) {
       console.error('getNoteById error:', error);
       return null;
@@ -69,10 +80,16 @@ export const database = {
     files?: string | null;
     embedding?: string | null;
     favorite?: boolean;
-  }): Promise<INote> => {
+  }): Promise<any> => {
     try {
       const note = new Note(data);
-      return await note.save();
+      const saved = await note.save();
+      const plain: any = saved.toObject();
+      return {
+        ...plain,
+        id: plain._id.toString(),
+        _id: undefined
+      };
     } catch (error) {
       console.error('createNote error:', error);
       throw error;
@@ -92,9 +109,15 @@ export const database = {
       embedding: string | null;
       favorite: boolean;
     }>
-  ): Promise<INote | null> => {
+  ): Promise<any | null> => {
     try {
-      return await Note.findByIdAndUpdate(id, data, { new: true });
+      const updated = await Note.findByIdAndUpdate(id, data, { new: true }).lean();
+      if (!updated) return null;
+      return {
+        ...updated,
+        id: updated._id.toString(),
+        _id: undefined
+      };
     } catch (error) {
       console.error('updateNote error:', error);
       return null;
@@ -113,16 +136,21 @@ export const database = {
   },
 
   // 검색
-  searchNotes: async (query: string): Promise<INote[]> => {
+  searchNotes: async (query: string): Promise<any[]> => {
     try {
       const regex = new RegExp(query, 'i');
-      return await Note.find({
+      const notes = await Note.find({
         $or: [
           { content: regex },
           { summary: regex },
           { tags: regex }
         ]
-      }).sort({ created_at: -1 });
+      }).sort({ created_at: -1 }).lean();
+      return notes.map(note => ({
+        ...note,
+        id: note._id.toString(),
+        _id: undefined
+      }));
     } catch (error) {
       console.error('searchNotes error:', error);
       return [];
