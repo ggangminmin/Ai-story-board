@@ -25,7 +25,16 @@ const NoteSchema: Schema = new Schema(
     favorite: { type: Boolean, default: false }
   },
   {
-    timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
+    timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
+    toJSON: {
+      virtuals: true,
+      transform: (doc, ret) => {
+        ret.id = ret._id.toString();
+        delete ret._id;
+        delete ret.__v;
+        return ret;
+      }
+    }
   }
 );
 
