@@ -377,24 +377,40 @@ function NotesListPage() {
                   )}
 
                   {/* 링크 */}
-                  {note.link && (
-                    <div className="mb-4 p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <svg className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                        </svg>
-                        <a
-                          href={note.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-xs text-blue-600 dark:text-blue-400 truncate hover:underline"
-                        >
-                          {note.link}
-                        </a>
-                      </div>
-                    </div>
-                  )}
+                  {(() => {
+                    try {
+                      const links = note.links ? JSON.parse(note.links) : [];
+                      const firstLink = links.length > 0 ? links[0] : null;
+                      return firstLink && firstLink.url ? (
+                        <div className="mb-4 p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <svg className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                            </svg>
+                            <div className="flex-1 min-w-0">
+                              {firstLink.title && (
+                                <p className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">{firstLink.title}</p>
+                              )}
+                              <a
+                                href={firstLink.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="text-xs text-blue-600 dark:text-blue-400 truncate hover:underline block"
+                              >
+                                {firstLink.url}
+                              </a>
+                            </div>
+                            {links.length > 1 && (
+                              <span className="text-xs text-gray-500 dark:text-gray-400">+{links.length - 1}</span>
+                            )}
+                          </div>
+                        </div>
+                      ) : null;
+                    } catch {
+                      return null;
+                    }
+                  })()}
                 </div>
 
                 {/* 하단 메타 정보 */}

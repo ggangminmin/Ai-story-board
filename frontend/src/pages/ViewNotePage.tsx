@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
 import apiClient from '../api/client';
-import { Note, FileInfo } from '../types';
+import { Note, FileInfo, Link } from '../types';
 
 function ViewNotePage() {
   const { id } = useParams<{ id: string }>();
@@ -67,6 +67,15 @@ function ViewNotePage() {
     }
   };
 
+  const parseLinks = (linksJson: string | null): Link[] => {
+    if (!linksJson) return [];
+    try {
+      return JSON.parse(linksJson);
+    } catch {
+      return [];
+    }
+  };
+
   const isImageFile = (mimetype: string) => {
     return mimetype.startsWith('image/');
   };
@@ -89,16 +98,17 @@ function ViewNotePage() {
 
   const files = parseFiles(note.files);
   const tags = parseTags(note.tags);
+  const links = parseLinks(note.links);
 
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-6 flex justify-between items-center">
-        <Link to="/" className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-1">
+        <RouterLink to="/" className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-1">
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           목록으로
-        </Link>
+        </RouterLink>
         <div className="flex gap-2">
           <button
             onClick={toggleFavorite}
@@ -161,22 +171,31 @@ function ViewNotePage() {
           </div>
         )}
 
-        {note.link && (
+        {links.length > 0 && (
           <div className="mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">링크</h2>
-            {note.link_description && (
-              <p className="text-gray-700 mb-2 italic">
-                💡 {note.link_description}
-              </p>
-            )}
-            <a
-              href={note.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-800 break-all"
-            >
-              {note.link}
-            </a>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">링크 ({links.length}개)</h2>
+            <div className="space-y-4">
+              {links.map((link, idx) => (
+                <div key={idx} className="border border-gray-300 rounded-lg p-4 bg-gray-50">
+                  {link.title && (
+                    <h3 className="font-semibold text-gray-900 mb-2">{link.title}</h3>
+                  )}
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 break-all block mb-2"
+                  >
+                    {link.url}
+                  </a>
+                  {link.description && (
+                    <p className="text-gray-700 text-sm italic">
+                      💡 {link.description}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
