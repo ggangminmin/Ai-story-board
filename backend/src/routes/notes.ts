@@ -88,16 +88,15 @@ router.get('/:id', validateObjectId, async (req: Request, res: Response) => {
 // 노트 생성
 router.post('/', upload.array('files', 10), async (req: Request, res: Response) => {
   try {
-    const { content, link } = req.body;
+    const { content, links } = req.body;
 
     if (!content) {
       return res.status(400).json({ error: '내용을 입력해주세요.' });
     }
 
-    // AI 요약, 태그, 링크 설명 생성
+    // AI 요약, 태그 생성
     const summary = await generateSummary(content);
     const tags = await generateTags(content);
-    const linkDescription = link ? await generateLinkDescription(link) : null;
 
     // 업로드된 파일 정보 및 요약 생성
     const files = req.files as Express.Multer.File[];
@@ -129,10 +128,9 @@ router.post('/', upload.array('files', 10), async (req: Request, res: Response) 
       })
     );
 
-    // 검색용 텍스트 결합 (content, summary, link_description, file summaries)
+    // 검색용 텍스트 결합 (content, summary, file summaries)
     let searchableText = content;
     if (summary) searchableText += `\n${summary}`;
-    if (linkDescription) searchableText += `\n${linkDescription}`;
 
     // 파일 요약 추가
     fileInfos.forEach(file => {
@@ -149,8 +147,7 @@ router.post('/', upload.array('files', 10), async (req: Request, res: Response) 
       content,
       summary,
       tags: JSON.stringify(tags),
-      link: link || null,
-      link_description: linkDescription,
+      links: links || null,
       files: JSON.stringify(fileInfos),
       embedding: embeddingJson,
       favorite: false
@@ -167,7 +164,7 @@ router.post('/', upload.array('files', 10), async (req: Request, res: Response) 
 router.put('/:id', validateObjectId, upload.array('files', 10), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { content, link, existingFiles } = req.body;
+    const { content, links, existingFiles } = req.body;
 
     const existingNote = await database.getNoteById(id);
     if (!existingNote) {
@@ -218,7 +215,7 @@ router.put('/:id', validateObjectId, upload.array('files', 10), async (req: Requ
       content: finalContent,
       summary,
       tags: typeof tags === 'string' ? tags : JSON.stringify(tags),
-      link: link || existingNote.link,
+      links: links || existingNote.links,
       files: JSON.stringify(allFiles),
       embedding: embeddingJson
     });

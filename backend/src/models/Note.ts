@@ -1,11 +1,16 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+export interface ILink {
+  title: string;
+  url: string;
+  description?: string;
+}
+
 export interface INote extends Document {
   content: string;
   summary: string | null;
   tags: string | null;
-  link: string | null;
-  link_description: string | null;
+  links: string | null; // JSON string of ILink[]
   files: string | null;
   embedding: string | null;
   favorite: boolean;
@@ -18,8 +23,7 @@ const NoteSchema: Schema = new Schema(
     content: { type: String, required: true },
     summary: { type: String, default: null },
     tags: { type: String, default: null },
-    link: { type: String, default: null },
-    link_description: { type: String, default: null },
+    links: { type: String, default: null }, // JSON string of ILink[]
     files: { type: String, default: null },
     embedding: { type: String, default: null },
     favorite: { type: Boolean, default: false }

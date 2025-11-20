@@ -75,8 +75,7 @@ export const database = {
     content: string;
     summary?: string | null;
     tags?: string | null;
-    link?: string | null;
-    link_description?: string | null;
+    links?: string | null;
     files?: string | null;
     embedding?: string | null;
     favorite?: boolean;
@@ -103,8 +102,7 @@ export const database = {
       content: string;
       summary: string | null;
       tags: string | null;
-      link: string | null;
-      link_description: string | null;
+      links: string | null;
       files: string | null;
       embedding: string | null;
       favorite: boolean;

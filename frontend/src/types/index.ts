@@ -1,10 +1,15 @@
+export interface Link {
+  title: string;
+  url: string;
+  description?: string;
+}
+
 export interface Note {
   id: string;
   content: string;
   summary: string | null;
   tags: string | null;
-  link: string | null;
-  link_description: string | null;
+  links: string | null; // JSON string of Link[]
   files: string | null;
   embedding: string | null;
   favorite: boolean;
