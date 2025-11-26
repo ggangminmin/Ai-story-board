@@ -3,11 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import apiClient from '../api/client';
 import { Link } from '../types';
 
+interface FileInput {
+  title: string;
+  files: File[];
+  description: string;
+}
+
 function NewNotePage() {
   const navigate = useNavigate();
   const [content, setContent] = useState('');
   const [links, setLinks] = useState<Link[]>([{ title: '', url: '', description: '' }]);
-  const [fileInputs, setFileInputs] = useState<File[][]>([[]]);
+  const [fileInputs, setFileInputs] = useState<FileInput[]>([{ title: '', files: [], description: '' }]);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -30,12 +36,26 @@ function NewNotePage() {
         formData.append('links', JSON.stringify(validLinks));
       }
 
+      // 파일 메타데이터 수집 (제목, 설명)
+      const fileMetadata: Array<{title: string; description: string; fileIndex: number}> = [];
+      let fileIndex = 0;
+
       // 모든 파일 입력에서 파일 수집
-      fileInputs.forEach((files) => {
-        files.forEach((file) => {
+      fileInputs.forEach((fileInput) => {
+        fileInput.files.forEach((file) => {
           formData.append('files', file);
+          fileMetadata.push({
+            title: fileInput.title,
+            description: fileInput.description,
+            fileIndex: fileIndex++
+          });
         });
       });
+
+      // 파일 메타데이터 전송
+      if (fileMetadata.length > 0) {
+        formData.append('fileMetadata', JSON.stringify(fileMetadata));
+      }
 
       await apiClient.post('/api/notes', formData, {
         headers: {
@@ -56,13 +76,21 @@ function NewNotePage() {
   const handleFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const newFileInputs = [...fileInputs];
-      newFileInputs[index] = Array.from(e.target.files);
+      newFileInputs[index].files = Array.from(e.target.files);
       setFileInputs(newFileInputs);
     }
   };
 
+  const updateFileInput = (index: number, field: keyof FileInput, value: string) => {
+    const newFileInputs = [...fileInputs];
+    if (field !== 'files') {
+      (newFileInputs[index][field] as string) = value;
+    }
+    setFileInputs(newFileInputs);
+  };
+
   const addFileInput = () => {
-    setFileInputs([...fileInputs, []]);
+    setFileInputs([...fileInputs, { title: '', files: [], description: '' }]);
   };
 
   const removeFileInput = (index: number) => {
@@ -186,7 +214,7 @@ function NewNotePage() {
           </div>
 
           <div className="space-y-4">
-            {fileInputs.map((files, index) => (
+            {fileInputs.map((fileInput, index) => (
               <div key={index} className="border border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
                 <div className="flex justify-between items-start mb-3">
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">파일 {index + 1}</span>
@@ -201,30 +229,46 @@ function NewNotePage() {
                   )}
                 </div>
 
-                <input
-                  type="file"
-                  multiple
-                  onChange={(e) => handleFileChange(index, e)}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 text-sm"
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp"
-                />
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  PDF, Word, Excel, PPT, 이미지 파일 등 (최대 50MB)
-                </p>
-                {files.length > 0 && (
-                  <div className="mt-2">
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      선택된 파일 ({files.length}개):
-                    </p>
-                    <ul className="text-sm text-gray-600 dark:text-gray-400 ml-4 list-disc">
-                      {files.map((file, idx) => (
-                        <li key={idx}>
-                          {file.name} ({(file.size / 1024).toFixed(2)} KB)
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    value={fileInput.title}
+                    onChange={(e) => updateFileInput(index, 'title', e.target.value)}
+                    placeholder="파일 제목 (선택사항)"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 text-sm"
+                  />
+                  <input
+                    type="file"
+                    multiple
+                    onChange={(e) => handleFileChange(index, e)}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 text-sm"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif,.webp"
+                  />
+                  <input
+                    type="text"
+                    value={fileInput.description}
+                    onChange={(e) => updateFileInput(index, 'description', e.target.value)}
+                    placeholder="설명 (선택사항)"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 text-sm"
+                  />
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    PDF, Word, Excel, PPT, 텍스트, 이미지 파일 등 (최대 50MB)
+                  </p>
+                  {fileInput.files.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        선택된 파일 ({fileInput.files.length}개):
+                      </p>
+                      <ul className="text-sm text-gray-600 dark:text-gray-400 ml-4 list-disc">
+                        {fileInput.files.map((file, idx) => (
+                          <li key={idx}>
+                            {file.name} ({(file.size / 1024).toFixed(2)} KB)
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>

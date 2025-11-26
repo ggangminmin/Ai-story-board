@@ -210,6 +210,10 @@ function ViewNotePage() {
                   key={idx}
                   className="border border-gray-300 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 bg-white dark:bg-gray-800/50"
                 >
+                  {file.title && (
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">{file.title}</h3>
+                  )}
+
                   {isImageFile(file.mimetype) ? (
                     <div>
                       <img
@@ -248,6 +252,10 @@ function ViewNotePage() {
                         </div>
                       )}
                     </div>
+                  )}
+
+                  {file.description && (
+                    <p className="text-gray-700 dark:text-gray-300 text-sm italic mt-2">💡 {file.description}</p>
                   )}
                 </div>
               ))}

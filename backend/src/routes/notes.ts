@@ -25,8 +25,15 @@ const storage = multer.diskStorage({
     cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
-    // 한글 파일명 인코딩 처리
-    const originalname = Buffer.from(file.originalname, 'latin1').toString('utf8');
+    // 한글 파일명 인코딩 처리 - UTF-8로 저장
+    let originalname = file.originalname;
+    try {
+      // Buffer를 통한 인코딩 변환 시도
+      originalname = Buffer.from(file.originalname, 'latin1').toString('utf8');
+    } catch (error) {
+      // 변환 실패시 원본 사용
+      originalname = file.originalname;
+    }
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, uniqueSuffix + '-' + originalname);
   },
@@ -44,15 +51,19 @@ const upload = multer({
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'application/vnd.ms-powerpoint',
       'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'text/plain',
       'image/jpeg',
       'image/png',
       'image/gif',
       'image/webp',
     ];
 
+    console.log(`File upload attempt: ${file.originalname}, mimetype: ${file.mimetype}`);
+
     if (allowedTypes.includes(file.mimetype) || file.mimetype.startsWith('image/')) {
       cb(null, true);
     } else {
+      console.error(`Rejected file type: ${file.mimetype} for file: ${file.originalname}`);
       cb(new Error('지원하지 않는 파일 형식입니다.'));
     }
   },
@@ -88,7 +99,7 @@ router.get('/:id', validateObjectId, async (req: Request, res: Response) => {
 // 노트 생성
 router.post('/', upload.array('files', 10), async (req: Request, res: Response) => {
   try {
-    const { content, links } = req.body;
+    const { content, links, fileMetadata } = req.body;
 
     if (!content) {
       return res.status(400).json({ error: '내용을 입력해주세요.' });
@@ -98,12 +109,27 @@ router.post('/', upload.array('files', 10), async (req: Request, res: Response) 
     const summary = await generateSummary(content);
     const tags = await generateTags(content);
 
+    // 파일 메타데이터 파싱
+    let parsedFileMetadata: Array<{title: string; description: string; fileIndex: number}> = [];
+    if (fileMetadata) {
+      try {
+        parsedFileMetadata = JSON.parse(fileMetadata);
+      } catch (e) {
+        parsedFileMetadata = [];
+      }
+    }
+
     // 업로드된 파일 정보 및 요약 생성
     const files = req.files as Express.Multer.File[];
     const fileInfos = await Promise.all(
-      files.map(async (file) => {
+      files.map(async (file, index) => {
         // 한글 파일명 디코딩
-        const originalname = Buffer.from(file.originalname, 'latin1').toString('utf8');
+        let originalname = file.originalname;
+        try {
+          originalname = Buffer.from(file.originalname, 'latin1').toString('utf8');
+        } catch (error) {
+          originalname = file.originalname;
+        }
         const filePath = path.join(__dirname, '../../uploads', file.filename);
         let fileSummary = '';
 
@@ -117,12 +143,17 @@ router.post('/', upload.array('files', 10), async (req: Request, res: Response) 
           fileSummary = '';
         }
 
+        // 파일 메타데이터 찾기
+        const metadata = parsedFileMetadata.find(m => m.fileIndex === index);
+
         return {
+          title: metadata?.title || '',
           originalname: originalname,
           filename: file.filename,
           mimetype: file.mimetype,
           size: file.size,
           path: `/uploads/${file.filename}`,
+          description: metadata?.description || '',
           summary: fileSummary,
         };
       })
@@ -177,13 +208,22 @@ router.put('/:id', validateObjectId, upload.array('files', 10), async (req: Requ
 
     // 파일 처리
     const newFiles = req.files as Express.Multer.File[];
-    const newFileInfos = newFiles.map(file => ({
-      originalname: file.originalname,
-      filename: file.filename,
-      mimetype: file.mimetype,
-      size: file.size,
-      path: `/uploads/${file.filename}`,
-    }));
+    const newFileInfos = newFiles.map(file => {
+      // 한글 파일명 디코딩
+      let originalname = file.originalname;
+      try {
+        originalname = Buffer.from(file.originalname, 'latin1').toString('utf8');
+      } catch (error) {
+        originalname = file.originalname;
+      }
+      return {
+        originalname: originalname,
+        filename: file.filename,
+        mimetype: file.mimetype,
+        size: file.size,
+        path: `/uploads/${file.filename}`,
+      };
+    });
 
     let allFiles = [];
     if (existingFiles) {

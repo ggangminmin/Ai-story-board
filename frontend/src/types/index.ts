@@ -18,10 +18,12 @@ export interface Note {
 }
 
 export interface FileInfo {
+  title?: string;
   originalname: string;
   filename: string;
   mimetype: string;
   size: number;
   path: string;
+  description?: string;
   summary?: string;
 }

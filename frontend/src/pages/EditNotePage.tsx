@@ -306,10 +306,10 @@ function EditNotePage() {
                   multiple
                   onChange={(e) => handleFileChange(index, e)}
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 text-sm"
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif,.webp"
                 />
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  PDF, Word, Excel, PPT, 이미지 파일 등 (최대 50MB)
+                  PDF, Word, Excel, PPT, 텍스트, 이미지 파일 등 (최대 50MB)
                 </p>
                 {files.length > 0 && (
                   <div className="mt-2">
