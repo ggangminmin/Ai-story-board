@@ -217,7 +217,7 @@ function ViewNotePage() {
                   {isImageFile(file.mimetype) ? (
                     <div>
                       <img
-                        src={file.path}
+                        src={`${import.meta.env.VITE_API_URL}${file.path}`}
                         alt={file.originalname}
                         className="max-w-full h-auto rounded mb-2"
                         style={{ maxHeight: '400px' }}
@@ -236,9 +236,8 @@ function ViewNotePage() {
                           </p>
                         </div>
                         <a
-                          href={file.path}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                          href={`${import.meta.env.VITE_API_URL}${file.path}`}
+                          download
                           className="bg-blue-600 dark:bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-700 dark:hover:bg-blue-600 transition"
                         >
                           다운로드
