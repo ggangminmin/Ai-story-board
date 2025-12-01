@@ -1,12 +1,14 @@
 import express, { Request, Response } from 'express';
-import multer from 'multer';
 import path from 'path';
 import mongoose from 'mongoose';
-import { database, uploadsDir } from '../db';
+import { database } from '../db';
+import { upload, cloudinary } from '../config/cloudinary';
 import { generateSummary, generateTags, generateLinkDescription, generateFileSummary, generateEmbedding } from '../services/openai';
 import { extractTextFromFile, isDocumentFile, isImageFile } from '../services/fileParser';
 import { cosineSimilarity } from '../utils/similarity';
 import CryptoJS from 'crypto-js';
+import fs from 'fs';
+import axios from 'axios';
 
 const router = express.Router();
 
@@ -18,56 +20,6 @@ const validateObjectId = (req: Request, res: Response, next: Function) => {
   }
   next();
 };
-
-// 파일 업로드 설정
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadsDir);
-  },
-  filename: (req, file, cb) => {
-    // 한글 파일명 인코딩 처리 - UTF-8로 저장
-    let originalname = file.originalname;
-    try {
-      // Buffer를 통한 인코딩 변환 시도
-      originalname = Buffer.from(file.originalname, 'latin1').toString('utf8');
-    } catch (error) {
-      // 변환 실패시 원본 사용
-      originalname = file.originalname;
-    }
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + '-' + originalname);
-  },
-});
-
-const upload = multer({
-  storage,
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = [
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-powerpoint',
-      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      'text/plain',
-      'image/jpeg',
-      'image/png',
-      'image/gif',
-      'image/webp',
-    ];
-
-    console.log(`File upload attempt: ${file.originalname}, mimetype: ${file.mimetype}`);
-
-    if (allowedTypes.includes(file.mimetype) || file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      console.error(`Rejected file type: ${file.mimetype} for file: ${file.originalname}`);
-      cb(new Error('지원하지 않는 파일 형식입니다.'));
-    }
-  },
-});
 
 // 전체 노트 조회
 router.get('/', async (req: Request, res: Response) => {
@@ -122,7 +74,7 @@ router.post('/', upload.array('files', 10), async (req: Request, res: Response) 
     // 업로드된 파일 정보 및 요약 생성
     const files = req.files as Express.Multer.File[];
     const fileInfos = await Promise.all(
-      files.map(async (file, index) => {
+      files.map(async (file: any, index) => {
         // 한글 파일명 디코딩
         let originalname = file.originalname;
         try {
@@ -130,13 +82,29 @@ router.post('/', upload.array('files', 10), async (req: Request, res: Response) 
         } catch (error) {
           originalname = file.originalname;
         }
-        const filePath = path.join(__dirname, '../../uploads', file.filename);
+
+        // Cloudinary URL 사용
+        const cloudinaryUrl = file.path; // Cloudinary가 자동으로 생성한 URL
         let fileSummary = '';
 
         // 문서 파일이면 텍스트 추출 후 요약 생성
+        // Cloudinary에서 파일을 다운로드해서 처리
         if (isDocumentFile(file.mimetype)) {
-          const extractedText = await extractTextFromFile(filePath, file.mimetype);
-          fileSummary = await generateFileSummary(originalname, extractedText);
+          try {
+            // Cloudinary URL에서 파일 다운로드
+            const response = await axios.get(cloudinaryUrl, { responseType: 'arraybuffer' });
+            const tempFilePath = path.join('/tmp', `temp-${Date.now()}-${originalname}`);
+            fs.writeFileSync(tempFilePath, response.data);
+
+            const extractedText = await extractTextFromFile(tempFilePath, file.mimetype);
+            fileSummary = await generateFileSummary(originalname, extractedText);
+
+            // 임시 파일 삭제
+            fs.unlinkSync(tempFilePath);
+          } catch (error) {
+            console.error('File summary generation error:', error);
+            fileSummary = '';
+          }
         }
         // 이미지 파일은 요약 없음
         else if (isImageFile(file.mimetype)) {
@@ -152,7 +120,8 @@ router.post('/', upload.array('files', 10), async (req: Request, res: Response) 
           filename: file.filename,
           mimetype: file.mimetype,
           size: file.size,
-          path: `/uploads/${file.filename}`,
+          path: cloudinaryUrl, // Cloudinary URL 저장
+          cloudinaryId: file.filename, // Cloudinary public_id 저장 (삭제 시 필요)
           description: metadata?.description || '',
           summary: fileSummary,
         };
@@ -208,7 +177,7 @@ router.put('/:id', validateObjectId, upload.array('files', 10), async (req: Requ
 
     // 파일 처리
     const newFiles = req.files as Express.Multer.File[];
-    const newFileInfos = newFiles.map(file => {
+    const newFileInfos = newFiles.map((file: any) => {
       // 한글 파일명 디코딩
       let originalname = file.originalname;
       try {
@@ -221,7 +190,8 @@ router.put('/:id', validateObjectId, upload.array('files', 10), async (req: Requ
         filename: file.filename,
         mimetype: file.mimetype,
         size: file.size,
-        path: `/uploads/${file.filename}`,
+        path: file.path, // Cloudinary URL
+        cloudinaryId: file.filename,
       };
     });
 
@@ -369,6 +339,38 @@ router.post('/search', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Semantic search error:', error);
     res.status(500).json({ error: 'AI 검색 중 오류가 발생했습니다.' });
+  }
+});
+
+// 파일 다운로드 프록시 (Cloudinary Cross-origin 문제 해결)
+router.get('/download/:noteId/:fileIndex', validateObjectId, async (req: Request, res: Response) => {
+  try {
+    const { noteId, fileIndex } = req.params;
+    const note = await database.getNoteById(noteId);
+
+    if (!note) {
+      return res.status(404).json({ error: '노트를 찾을 수 없습니다.' });
+    }
+
+    const files = note.files ? JSON.parse(note.files) : [];
+    const fileIndexNum = parseInt(fileIndex);
+
+    if (fileIndexNum < 0 || fileIndexNum >= files.length) {
+      return res.status(404).json({ error: '파일을 찾을 수 없습니다.' });
+    }
+
+    const file = files[fileIndexNum];
+
+    // Cloudinary URL에서 파일 다운로드
+    const response = await axios.get(file.path, { responseType: 'arraybuffer' });
+
+    // Content-Disposition 헤더 설정 (파일 다운로드 강제)
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(file.originalname)}"`);
+    res.setHeader('Content-Type', file.mimetype);
+    res.send(response.data);
+  } catch (error) {
+    console.error('File download error:', error);
+    res.status(500).json({ error: '파일 다운로드 중 오류가 발생했습니다.' });
   }
 });
 

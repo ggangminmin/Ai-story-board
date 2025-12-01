@@ -1,9 +1,7 @@
 import express from 'express';
 import cors from 'cors';
-import path from 'path';
 import dotenv from 'dotenv';
 import notesRouter from './routes/notes';
-import { uploadsDir } from './db';
 import './db'; // DB 초기화
 
 dotenv.config();
@@ -42,29 +40,6 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 정적 파일 제공 (업로드된 파일) - 환경변수 기반
-app.use('/uploads', express.static(uploadsDir));
-
-// 파일 다운로드 라우트 (Content-Disposition 헤더 추가)
-app.get('/uploads/:filename', async (req, res, next) => {
-  const filename = req.params.filename;
-  const filePath = path.join(uploadsDir, filename);
-
-  // download 쿼리 파라미터가 있으면 다운로드, 없으면 일반 정적 파일 제공
-  if (req.query.download !== undefined) {
-    // originalName 쿼리 파라미터가 있으면 그 이름으로 다운로드
-    const downloadName = (req.query.originalName as string) || filename;
-    res.download(filePath, downloadName, (err) => {
-      if (err) {
-        console.error('Download error:', err);
-        next();
-      }
-    });
-  } else {
-    next();
-  }
-});
-
 // 라우트
 app.use('/api/notes', notesRouter);
 
@@ -76,7 +51,8 @@ app.get('/api/health', (req, res) => {
 // 서버 시작
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
-  console.log(`📁 Uploads directory: ${uploadsDir}`);
+  console.log(`☁️ File storage: Cloudinary`);
+  console.log(`🤖 OpenAI API: ${process.env.OPENAI_API_KEY ? 'Configured' : 'Not configured'}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 

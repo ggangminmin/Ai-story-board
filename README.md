@@ -30,7 +30,8 @@ AI 기반 개인 아카이브 웹앱 - 메모, 링크, 파일을 저장하고 AI
 - Express
 - TypeScript
 - **MongoDB** (MongoDB Atlas - 클라우드 데이터베이스)
-- Multer (파일 업로드)
+- **Cloudinary** (클라우드 파일 스토리지)
+- Multer + Cloudinary Storage (파일 업로드)
 - OpenAI API (GPT-4o-mini + text-embedding-3-small)
 - crypto-js (AES 암호화)
 
@@ -42,11 +43,12 @@ MyVault-AI/
 │   ├── src/
 │   │   ├── server.ts          # Express 서버
 │   │   ├── db.ts              # MongoDB 연결 및 초기화
+│   │   ├── config/
+│   │   │   └── cloudinary.ts  # Cloudinary 설정
 │   │   ├── routes/
 │   │   │   └── notes.ts       # 노트 CRUD API
 │   │   └── services/
 │   │       └── openai.ts      # OpenAI API 연동 (요약, 태그, 임베딩)
-│   ├── uploads/               # 업로드된 파일 저장소
 │   ├── package.json
 │   └── tsconfig.json
 ├── frontend/
@@ -92,6 +94,7 @@ npm start
 - npm
 - OpenAI API Key ([여기서 발급](https://platform.openai.com/api-keys))
 - MongoDB Atlas 계정 및 클러스터 ([무료 가입](https://www.mongodb.com/cloud/atlas))
+- Cloudinary 계정 ([무료 가입](https://cloudinary.com))
 
 ### 🔧 수동 설치 (고급 사용자)
 
@@ -106,6 +109,9 @@ cp .env.example .env
 # .env 파일을 열어서 다음 정보를 입력하세요:
 # - OPENAI_API_KEY: OpenAI API 키
 # - MONGODB_URI: MongoDB Atlas 연결 문자열
+# - CLOUDINARY_CLOUD_NAME: Cloudinary 클라우드 이름
+# - CLOUDINARY_API_KEY: Cloudinary API 키
+# - CLOUDINARY_API_SECRET: Cloudinary API 시크릿
 npm run dev
 ```
 
@@ -152,11 +158,13 @@ http://localhost:3000 으로 접속하여 앱을 사용할 수 있습니다.
 
 ### 다중 파일 업로드
 
-- **지원 파일**: PDF, Word, Excel, PowerPoint, 텍스트(.txt), 이미지 (JPG, PNG, GIF, WebP)
+- **지원 파일**: PDF, Word (MS Office, Hancom Office), Excel, PowerPoint, 텍스트(.txt), 이미지 (JPG, PNG, GIF, WebP)
 - **파일 메타데이터**: 각 파일에 제목과 설명 추가 가능
+- **클라우드 스토리지**: Cloudinary를 사용한 안정적인 파일 저장
 - 최대 파일 크기: 50MB
 - 여러 개의 파일을 하나의 노트에 업로드 가능
 - AI가 파일 내용을 분석하여 자동 요약 생성
+- 크로스 브라우저 다운로드 지원
 
 ### 시맨틱 검색
 
@@ -233,6 +241,9 @@ npm run preview
 3. 환경 변수 설정:
    - `OPENAI_API_KEY`: OpenAI API 키
    - `MONGODB_URI`: MongoDB Atlas 연결 문자열
+   - `CLOUDINARY_CLOUD_NAME`: Cloudinary 클라우드 이름
+   - `CLOUDINARY_API_KEY`: Cloudinary API 키
+   - `CLOUDINARY_API_SECRET`: Cloudinary API 시크릿
    - `PORT`: 포트 번호 (기본값 5000)
 4. 빌드 명령어: `npm install && npm run build`
 5. 시작 명령어: `npm start`
@@ -249,9 +260,16 @@ MyVault AI - 개인 아카이브 프로젝트
 
 ## 최근 업데이트
 
+### 2025년 12월
+
+- ✅ **Cloudinary 통합** - 클라우드 기반 파일 스토리지로 전환하여 안정적인 파일 관리
+- ✅ **Hancom Office 지원** - 한글 오피스 파일 형식 (docx, xls, ppt) 업로드 지원
+- ✅ **파일 다운로드 개선** - 크로스 브라우저 다운로드 기능 향상
+- ✅ **파일 접근 권한** - Cloudinary public access mode 설정으로 안정적인 파일 접근
+
 ### 2025년 11월
 
 - ✅ **다중 링크 지원** - 제목, URL, 설명이 포함된 여러 링크 추가/삭제 기능
-- ✅ **다중 파일 업로드** - 제목과 설명이 포함된 여러 파일 업로드 기능
+- ✅ **다중 파일 업로드** - 제목과 설명이 포함한 여러 파일 업로드 기능
 - ✅ **파일 메타데이터** - 각 파일에 제목과 설명을 추가하여 관리
 - ✅ **텍스트 파일 지원** - .txt 파일 업로드 및 관리 기능 추가
