@@ -222,7 +222,16 @@ function ViewNotePage() {
                         className="max-w-full h-auto rounded mb-2"
                         style={{ maxHeight: '400px' }}
                       />
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{file.originalname}</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{file.originalname}</p>
+                        <a
+                          href={`${import.meta.env.VITE_API_URL}${file.path}`}
+                          download
+                          className="bg-blue-600 dark:bg-blue-700 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 dark:hover:bg-blue-600 transition"
+                        >
+                          다운로드
+                        </a>
+                      </div>
                     </div>
                   ) : (
                     <div>
