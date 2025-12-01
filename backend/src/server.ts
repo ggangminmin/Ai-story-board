@@ -46,13 +46,15 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(uploadsDir));
 
 // 파일 다운로드 라우트 (Content-Disposition 헤더 추가)
-app.get('/uploads/:filename', (req, res, next) => {
+app.get('/uploads/:filename', async (req, res, next) => {
   const filename = req.params.filename;
   const filePath = path.join(uploadsDir, filename);
 
   // download 쿼리 파라미터가 있으면 다운로드, 없으면 일반 정적 파일 제공
   if (req.query.download !== undefined) {
-    res.download(filePath, filename, (err) => {
+    // originalName 쿼리 파라미터가 있으면 그 이름으로 다운로드
+    const downloadName = (req.query.originalName as string) || filename;
+    res.download(filePath, downloadName, (err) => {
       if (err) {
         console.error('Download error:', err);
         next();
