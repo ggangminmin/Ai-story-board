@@ -225,8 +225,7 @@ function ViewNotePage() {
                       <div className="flex items-center justify-between">
                         <p className="text-sm text-gray-600 dark:text-gray-400">{file.originalname}</p>
                         <a
-                          href={`${import.meta.env.VITE_API_URL}${file.path}`}
-                          download
+                          href={`${import.meta.env.VITE_API_URL}${file.path}?download`}
                           className="bg-blue-600 dark:bg-blue-700 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 dark:hover:bg-blue-600 transition"
                         >
                           다운로드
@@ -245,8 +244,7 @@ function ViewNotePage() {
                           </p>
                         </div>
                         <a
-                          href={`${import.meta.env.VITE_API_URL}${file.path}`}
-                          download
+                          href={`${import.meta.env.VITE_API_URL}${file.path}?download`}
                           className="bg-blue-600 dark:bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-700 dark:hover:bg-blue-600 transition"
                         >
                           다운로드

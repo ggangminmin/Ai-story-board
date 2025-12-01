@@ -45,6 +45,24 @@ app.use(express.urlencoded({ extended: true }));
 // 정적 파일 제공 (업로드된 파일) - 환경변수 기반
 app.use('/uploads', express.static(uploadsDir));
 
+// 파일 다운로드 라우트 (Content-Disposition 헤더 추가)
+app.get('/uploads/:filename', (req, res, next) => {
+  const filename = req.params.filename;
+  const filePath = path.join(uploadsDir, filename);
+
+  // download 쿼리 파라미터가 있으면 다운로드, 없으면 일반 정적 파일 제공
+  if (req.query.download !== undefined) {
+    res.download(filePath, filename, (err) => {
+      if (err) {
+        console.error('Download error:', err);
+        next();
+      }
+    });
+  } else {
+    next();
+  }
+});
+
 // 라우트
 app.use('/api/notes', notesRouter);
 
